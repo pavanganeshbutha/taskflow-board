@@ -6,6 +6,14 @@ class Task {
     this.id = crypto.randomUUID();
     this.status = "todo";
   }
+
+  render() {
+    return `<div class="task-card" data-task-id=${this.id}>
+        <h4>${this.name}</h4>
+        <p>${this.description}</p>
+        <span class="priority">${this.priority}</span>
+    </div>`;
+  }
 }
 
 class Column {
@@ -16,10 +24,20 @@ class Column {
   }
 
   render() {
+    let tasksHTMLString = this.tasks
+      .map(function (task) {
+        return task.render();
+      })
+      .join("");
     return `<div id=${this.id}>
         <h3>${this.title}</h3>
-        <div class="task-list"></div>
+        <div class="task-list">${tasksHTMLString}</div>
+        <button class="add-task-btn" data-id="${this.id}">+ Add Task</button>
     </div>`;
+  }
+
+  addTask(taskInstance) {
+    this.tasks.push(taskInstance);
   }
 }
 
@@ -42,8 +60,24 @@ class Board {
     });
     boardContainer.innerHTML = columnsHTML.join("");
   }
+
+  attachEventListeners() {
+    const boardContainer = document.getElementById("board-container");
+    boardContainer.addEventListener("click", (event) => {
+      if (event.target.classList.contains("add-task-btn")) {
+        const columnId = event.target.getAttribute("data-id");
+        const column = this.columns.find(function (col) {
+          return col.id === columnId;
+        });
+        const initialTask = new Task("Fix Header", "Align the logo", "High");
+        column.addTask(initialTask);
+        this.render();
+      }
+    });
+  }
 }
 
 const taskBoard = new Board();
 taskBoard.initializeColumns();
 taskBoard.render();
+taskBoard.attachEventListeners();
