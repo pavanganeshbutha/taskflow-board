@@ -4,10 +4,37 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="css/styles.css" />
-    <title>Taskflow Board</title>
+    <title>Taskflow</title>
   </head>
   <body>
-    <section id="board-container"></section>
+    <nav>
+      <div class="nav-container">
+        <h1>Taskflow</h1>
+        <button
+          class="add-task-btn"
+          command="show-modal"
+          commandfor="task-modal"
+        >
+          + Add Task
+        </button>
+      </div>
+    </nav>
+    <main id="board-container"></main>
+    <dialog id="task-modal">
+      <form>
+        <input type="text" id="task-name" placeholder="Task" />
+        <textarea id="task-description" placeholder="Description"></textarea>
+        <select id="task-priority">
+          <option value="low">Low</option>
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+        </select>
+        <button type="submit">Save Task</button>
+        <button type="button" commandfor="task-modal" command="close">
+          Cancel
+        </button>
+      </form>
+    </dialog>
     <script type="module" src="scripts/app.js"></script>
   </body>
 </html>

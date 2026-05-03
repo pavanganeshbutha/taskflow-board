@@ -3,15 +3,16 @@ class Task {
     this.name = name;
     this.description = description;
     this.priority = priority;
-    this.id = crypto.randomUUID();
     this.status = "todo";
+    this.id = crypto.randomUUID();
   }
 
   render() {
-    return `<div class="task-card" data-task-id=${this.id}>
-        <h4>${this.name}</h4>
-        <p>${this.description}</p>
-        <span class="priority">${this.priority}</span>
+    return `<div class="task-card" draggable="true" data-task-id="${this.id}">
+    <h4>${this.name}</h4>
+    <p>${this.description}</p>
+    <span class="priority">${this.priority}</span>
+    <button class=""delete-btn>Delete</button>
     </div>`;
   }
 }
@@ -24,82 +25,134 @@ class Column {
   }
 
   render() {
-    let tasksHTMLString = this.tasks
-      .map(function (task) {
+    let taskHTMLString = this.tasks
+      .map((task) => {
         return task.render();
       })
       .join("");
-    return `<div id=${this.id}>
-        <h3>${this.title}</h3>
-        <div class="task-list">${tasksHTMLString}</div>
-        <button class="add-task-btn" data-id="${this.id}">+ Add Task</button>
-    </div>`;
+    return `
+    <section id=${this.id}>
+      <h2>${this.title} ${this.tasks.length}</h2>
+      <div class="task-list">${taskHTMLString}</div>
+    </section>
+    `;
   }
 
-  addTask(taskInstance) {
-    this.tasks.push(taskInstance);
+  addTask(taskIntance) {
+    this.tasks.push(taskIntance);
   }
 }
 
 class Board {
   constructor() {
     this.columns = [];
+    this.draggedTaskId = null;
   }
 
   initializeColumns() {
-    const taskflow_data = localStorage.getItem("taskflow_data");
-    if (taskflow_data) {
-      const parsedColumns = JSON.parse(taskflow_data);
-      this.columns = [];
-      parsedColumns.forEach((column) => {
+    const savedData = localStorage.getItem("taskFlow-board-data");
+    if (!savedData) {
+      const todoColumn = new Column("col-todo", "To Do");
+      const inProgressColumn = new Column("col-in-progress", "In Progress");
+      const doneColumn = new Column("col-done", "Done");
+
+      this.columns.push(todoColumn, inProgressColumn, doneColumn);
+    } else {
+      const parsedColumns = JSON.parse(savedData);
+      for (let column of parsedColumns) {
         const realColumn = new Column(column.id, column.title);
-        column.tasks.forEach((task) => {
+        for (let task of column.tasks) {
           const realTask = new Task(task.name, task.description, task.priority);
           realTask.id = task.id;
           realTask.status = task.status;
           realColumn.addTask(realTask);
-        });
+        }
         this.columns.push(realColumn);
-      });
-      return;
+      }
     }
-    const todoColumn = new Column("col-todo", "To Do");
-    const inProgressColumn = new Column("col-in-progress", "In Progress");
-    const doneColumn = new Column("col-done", "Done");
-    this.columns.push(todoColumn, inProgressColumn, doneColumn);
   }
 
   render() {
-    const boardContainer = document.getElementById("board-container");
-    const columnsHTML = this.columns.map(function (column) {
+    const boardContainer = document.querySelector("#board-container");
+
+    let columnsHTMLString = this.columns.map((column) => {
       return column.render();
     });
-    boardContainer.innerHTML = columnsHTML.join("");
+    let HTMLString = columnsHTMLString.join("");
+    boardContainer.innerHTML = HTMLString;
+    this.saveToLocalStorage();
   }
 
   attachEventListeners() {
-    const boardContainer = document.getElementById("board-container");
-    boardContainer.addEventListener("click", (event) => {
-      if (event.target.classList.contains("add-task-btn")) {
-        const columnId = event.target.getAttribute("data-id");
-        const column = this.columns.find(function (col) {
-          return col.id === columnId;
-        });
-        const initialTask = new Task("Fix Header", "Align the logo", "High");
-        column.addTask(initialTask);
-        this.render();
-        this.saveState();
+    const form = document.querySelector("form");
+    const boardContainer = document.querySelector("#board-container");
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+
+      const name = document.querySelector("#task-name").value;
+      const description = document.querySelector("#task-description").value;
+      const priority = document.querySelector("#task-priority").value;
+
+      const newTask = new Task(name, description, priority);
+      this.columns[0].addTask(newTask);
+      this.render();
+      form.reset();
+      document.querySelector("#task-modal").close();
+    });
+
+    boardContainer.addEventListener("dragstart", (event) => {
+      if (event.target.classList.contains("task-card")) {
+        this.draggedTaskId = event.target.getAttribute("data-task-id");
+        console.log(this.draggedTaskId);
       }
+    });
+
+    boardContainer.addEventListener("dragover", (event) => {
+      event.preventDefault();
+    });
+
+    boardContainer.addEventListener("drop", (event) => {
+      event.preventDefault();
+
+      if (this.draggedTaskId === null) return;
+
+      const targetColumnElement = event.target.closest("section");
+      if (targetColumnElement) {
+        const destinationId = targetColumnElement.id;
+        this.moveTask(this.draggedTaskId, destinationId);
+        this.render();
+      }
+      this.draggedTaskId = null;
     });
   }
 
-  saveState() {
-    const stringifyColumns = JSON.stringify(this.columns);
-    localStorage.setItem("taskflow_data", stringifyColumns);
+  moveTask(taskId, destinationColumnId) {
+    let extractedTask = null;
+    for (let column of this.columns) {
+      const taskIndex = column.tasks.findIndex((task) => taskId === task.id);
+
+      if (taskIndex !== -1) {
+        extractedTask = column.tasks[taskIndex];
+        column.tasks.splice(taskIndex, 1);
+        break;
+      }
+    }
+    if (extractedTask === null) return;
+    const destinationColumn = this.columns.find(
+      (column) => column.id === destinationColumnId,
+    );
+    if (destinationColumnId) {
+      extractedTask.status = destinationColumnId;
+      destinationColumn.tasks.push(extractedTask);
+    }
+  }
+
+  saveToLocalStorage() {
+    localStorage.setItem("taskFlow-board-data", JSON.stringify(this.columns));
   }
 }
-
 const taskBoard = new Board();
 taskBoard.initializeColumns();
-taskBoard.render();
 taskBoard.attachEventListeners();
+taskBoard.render();
