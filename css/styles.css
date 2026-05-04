@@ -228,3 +228,20 @@ section {
 .add-task-btn:active {
   transform: translateY(0);
 }
+
+.delete-btn {
+  display: block;
+  width: 100%;
+  margin: 15px 0 0 0;
+  background-color: transparent;
+  color: var(--text-color);
+  padding: 7px 0;
+  border: 1px solid var(--border-color);
+  font-size: 14px;
+  cursor: pointer;
+  transition: color var(--transition-fast);
+  border-radius: var(--border-radius-sm);
+}
+.delete-btn:hover {
+  background-color: rgb(182, 68, 68);
+}
