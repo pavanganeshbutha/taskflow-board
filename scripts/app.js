@@ -12,7 +12,7 @@ class Task {
     <h4>${this.name}</h4>
     <p>${this.description}</p>
     <span class="priority">${this.priority}</span>
-    <button class=""delete-btn>Delete</button>
+    <button class="delete-btn">Delete</button>
     </div>`;
   }
 }
@@ -104,7 +104,6 @@ class Board {
     boardContainer.addEventListener("dragstart", (event) => {
       if (event.target.classList.contains("task-card")) {
         this.draggedTaskId = event.target.getAttribute("data-task-id");
-        console.log(this.draggedTaskId);
       }
     });
 
@@ -125,6 +124,15 @@ class Board {
       }
       this.draggedTaskId = null;
     });
+
+    boardContainer.addEventListener("click", (event) => {
+      if (event.target.classList.contains("delete-btn")) {
+        const taskCard = event.target.closest(".task-card");
+        const taskId = taskCard.getAttribute("data-task-id");
+        this.deleteTask(taskId);
+        this.render();
+      }
+    });
   }
 
   moveTask(taskId, destinationColumnId) {
@@ -142,7 +150,7 @@ class Board {
     const destinationColumn = this.columns.find(
       (column) => column.id === destinationColumnId,
     );
-    if (destinationColumnId) {
+    if (destinationColumn) {
       extractedTask.status = destinationColumnId;
       destinationColumn.tasks.push(extractedTask);
     }
@@ -150,6 +158,16 @@ class Board {
 
   saveToLocalStorage() {
     localStorage.setItem("taskFlow-board-data", JSON.stringify(this.columns));
+  }
+
+  deleteTask(taskId) {
+    for (let column of this.columns) {
+      const taskIndex = column.tasks.findIndex((task) => taskId === task.id);
+      if (taskIndex !== -1) {
+        column.tasks.splice(taskIndex, 1);
+        break;
+      }
+    }
   }
 }
 const taskBoard = new Board();
