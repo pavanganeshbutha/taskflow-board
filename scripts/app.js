@@ -11,7 +11,7 @@ class Task {
     return `<div class="task-card" draggable="true" data-task-id="${this.id}">
     <h4>${this.name}</h4>
     <p>${this.description}</p>
-    <span class="priority">${this.priority}</span>
+    <span class="priority priority-${this.priority}">${this.priority}</span>
     <button class="delete-btn">Delete</button>
     </div>`;
   }
@@ -24,22 +24,27 @@ class Column {
     this.tasks = [];
   }
 
-  render() {
-    let taskHTMLString = this.tasks
+  render(filterValue = "all") {
+    const tasksToRender =
+      filterValue === "all"
+        ? this.tasks
+        : this.tasks.filter((task) => task.priority === filterValue);
+
+    const taskHTMLString = tasksToRender
       .map((task) => {
         return task.render();
       })
       .join("");
     return `
-    <section id=${this.id}>
-      <h2>${this.title} ${this.tasks.length}</h2>
+    <section id="${this.id}">
+      <h2>${this.title} ${tasksToRender.length}</h2>
       <div class="task-list">${taskHTMLString}</div>
     </section>
     `;
   }
 
-  addTask(taskIntance) {
-    this.tasks.push(taskIntance);
+  addTask(taskInstance) {
+    this.tasks.push(taskInstance);
   }
 }
 
@@ -47,6 +52,7 @@ class Board {
   constructor() {
     this.columns = [];
     this.draggedTaskId = null;
+    this.currentFilter = "all";
   }
 
   initializeColumns() {
@@ -76,7 +82,7 @@ class Board {
     const boardContainer = document.querySelector("#board-container");
 
     let columnsHTMLString = this.columns.map((column) => {
-      return column.render();
+      return column.render(this.currentFilter);
     });
     let HTMLString = columnsHTMLString.join("");
     boardContainer.innerHTML = HTMLString;
@@ -86,6 +92,7 @@ class Board {
   attachEventListeners() {
     const form = document.querySelector("form");
     const boardContainer = document.querySelector("#board-container");
+    const filterPriority = document.querySelector("#filter-priority");
 
     form.addEventListener("submit", (event) => {
       event.preventDefault();
@@ -132,6 +139,11 @@ class Board {
         this.deleteTask(taskId);
         this.render();
       }
+    });
+
+    filterPriority.addEventListener("change", (event) => {
+      this.currentFilter = event.target.value;
+      this.render();
     });
   }
 
